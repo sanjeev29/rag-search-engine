@@ -2,7 +2,7 @@ import os
 import pickle
 import string
 from collections import defaultdict
-from typing import Optional
+from typing import Counter, Optional
 
 from nltk.stem import PorterStemmer
 
@@ -23,8 +23,12 @@ class InvertedIndex:
         # Maps document IDs -> full document objects
         self._docmap: dict[int, dict] = {}
 
+        # Maps document IDs -> Counter (track how many times each term appears in each document)
+        self._term_frequencies: dict[int, Counter] = {}
+
         self.index_path = os.path.join(CACHE_DIR, "index.pkl")
         self.docmap_path = os.path.join(CACHE_DIR, "docmap.pkl")
+        self.term_frequencies_path = os.path.join(CACHE_DIR, "term_frequencies.pkl")
 
     def __add_document(self, doc_id: int, text: str) -> None:
         # Tokenize input text
@@ -34,6 +38,9 @@ class InvertedIndex:
         for token in set(tokens):
             self._index[token].add(doc_id)
 
+        # Count term frequencies for this document
+        self._term_frequencies[doc_id] = Counter(tokens)
+
     def get_documents(self, term: str) -> list[int]:
         doc_ids = self._index.get(term, set())
 
@@ -41,6 +48,15 @@ class InvertedIndex:
 
     def get_document_by_id(self, doc_id: int) -> Optional[dict[int, dict]]:
         return self._docmap.get(doc_id, {})
+
+    def get_tf(self, doc_id: int, term: str) -> int:
+        tokens = tokenize_text(term)
+        if len(tokens) != 1:
+            raise ValueError("Term must be a single token.")
+
+        # Get the term frequency for this document, return 0 if doc_id doesn't exist
+        term_freq = self._term_frequencies.get(doc_id, Counter())
+        return term_freq.get(tokens[0], 0)
 
     def build(self) -> None:
         # Read movies data
@@ -67,26 +83,27 @@ class InvertedIndex:
         with open(self.docmap_path, 'wb') as f:
             pickle.dump(self._docmap, f)
 
+        # Save term frequencies
+        with open(self.term_frequencies_path, 'wb') as f:
+            pickle.dump(self._term_frequencies, f)
+
     def load(self):
         """Load the index and docmap from the disk."""
 
-        # Check if index files exist on disk
-        if not self.is_cached():
+        try:
+            # Load index
+            with open(self.index_path, 'rb') as f:
+                self._index = pickle.load(f)
+
+            # Load docmap
+            with open(self.docmap_path, 'rb') as f:
+                self._docmap = pickle.load(f)
+
+            # Load term frequencies
+            with open(self.term_frequencies_path, 'rb') as f:
+                self._term_frequencies = pickle.load(f)
+        except FileNotFoundError:
             raise FileNotFoundError("Index files doesn't exist. Please run the build command.")
-
-        # Load index
-        with open(self.index_path, 'rb') as f:
-            self._index = pickle.load(f)
-
-        # Load docmap
-        with open(self.docmap_path, 'rb') as f:
-            self._docmap = pickle.load(f)
-
-    def is_cached(self) -> bool:
-        """Check if the cached index files exist on disk."""
-        if not os.path.exists(self.index_path) or not os.path.exists(self.docmap_path):
-            return False
-        return True
 
 
 def build_command() -> None:
@@ -122,6 +139,12 @@ def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
                     break
     
     return results
+
+
+def tf_command(doc_id: int, term: str):
+    index = InvertedIndex()
+    index.load()
+    return index.get_tf(doc_id, term)
 
 
 def preprocess_text(text: str) -> list[str]:
