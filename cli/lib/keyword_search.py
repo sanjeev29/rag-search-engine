@@ -2,6 +2,7 @@ import os
 import pickle
 import string
 from collections import defaultdict
+from typing import Optional
 
 from nltk.stem import PorterStemmer
 
@@ -20,7 +21,7 @@ class InvertedIndex:
         self._index = defaultdict(set)
 
         # Maps document IDs -> full document objects
-        self._docmap: dict[int, int] = {}
+        self._docmap: dict[int, dict] = {}
 
         self.index_path = os.path.join(CACHE_DIR, "index.pkl")
         self.docmap_path = os.path.join(CACHE_DIR, "docmap.pkl")
@@ -30,13 +31,16 @@ class InvertedIndex:
         tokens = tokenize_text(text)
 
         # Add each token to the index with document ID
-        for token in tokens:
+        for token in set(tokens):
             self._index[token].add(doc_id)
 
     def get_documents(self, term: str) -> list[int]:
         doc_ids = self._index.get(term, set())
 
         return sorted(list(doc_ids))
+
+    def get_document_by_id(self, doc_id: int) -> Optional[dict[int, dict]]:
+        return self._docmap.get(doc_id, {})
 
     def build(self) -> None:
         # Read movies data
@@ -63,6 +67,27 @@ class InvertedIndex:
         with open(self.docmap_path, 'wb') as f:
             pickle.dump(self._docmap, f)
 
+    def load(self):
+        """Load the index and docmap from the disk."""
+
+        # Check if index files exist on disk
+        if not self.is_cached():
+            raise FileNotFoundError("Index files doesn't exist. Please run the build command.")
+
+        # Load index
+        with open(self.index_path, 'rb') as f:
+            self._index = pickle.load(f)
+
+        # Load docmap
+        with open(self.docmap_path, 'rb') as f:
+            self._docmap = pickle.load(f)
+
+    def is_cached(self) -> bool:
+        """Check if the cached index files exist on disk."""
+        if not os.path.exists(self.index_path) or not os.path.exists(self.docmap_path):
+            return False
+        return True
+
 
 def build_command() -> None:
     index = InvertedIndex()
@@ -71,20 +96,30 @@ def build_command() -> None:
 
 
 def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
-    movies = load_movies()
+    index = InvertedIndex()
+    index.load()
+
     results = []
+    seen_ids = set()  # Track seen IDs to avoid duplicates
     
     # Preprocess query
     query_tokens = tokenize_text(query)
     
-    for movie in movies:
-        title_tokens = tokenize_text(movie["title"])
+    # Iterate over each token in the query
+    for token in query_tokens:
+        # Get matching documents for this token
+        matching_doc_ids = index.get_documents(term=token)
         
-        # Check if any query word matches any title word
-        if has_matching_token(query_tokens, title_tokens):
-            results.append(movie)
-            if len(results) >= limit:
-                break
+        for doc_id in matching_doc_ids:
+            if doc_id not in seen_ids:
+                seen_ids.add(doc_id)
+                doc = index.get_document_by_id(doc_id)
+                if doc:
+                    results.append(doc)
+                
+                # Stop searching if we have enough results
+                if len(results) >= limit:
+                    break
     
     return results
 
