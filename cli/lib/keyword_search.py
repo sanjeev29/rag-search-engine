@@ -1,3 +1,4 @@
+import math
 import os
 import pickle
 import string
@@ -41,6 +42,18 @@ class InvertedIndex:
         # Count term frequencies for this document
         self._term_frequencies[doc_id] = Counter(tokens)
 
+    def calculate_idf(self, term: str) -> float:
+        tokens = tokenize_text(term)
+        if len(tokens) != 1:
+            raise ValueError("Term must be a single token.")
+        
+        token = tokens[0]
+        doc_count = len(self._docmap)
+        # Measures how many documents in the dataset contain a term
+        term_doc_count = len(self.get_documents(token))
+
+        return round(math.log((doc_count + 1) / (term_doc_count + 1)), 2)
+
     def get_documents(self, term: str) -> list[int]:
         doc_ids = self._index.get(term, set())
 
@@ -54,9 +67,10 @@ class InvertedIndex:
         if len(tokens) != 1:
             raise ValueError("Term must be a single token.")
 
+        token = tokens[0]
         # Get the term frequency for this document, return 0 if doc_id doesn't exist
         term_freq = self._term_frequencies.get(doc_id, Counter())
-        return term_freq.get(tokens[0], 0)
+        return term_freq.get(token, 0)
 
     def build(self) -> None:
         # Read movies data
@@ -110,6 +124,12 @@ def build_command() -> None:
     index = InvertedIndex()
     index.build()
     index.save()
+
+
+def idf_command(term: str) -> float:
+    index = InvertedIndex()
+    index.load()
+    return index.calculate_idf(term)
 
 
 def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
