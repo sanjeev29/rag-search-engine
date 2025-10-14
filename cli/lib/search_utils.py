@@ -1,7 +1,17 @@
 import json
 import os
 
+# BM25 search parameters
+
+# Saturation parameter for the term frequency
 BM25_K1 = 1.5
+
+# Normalization strength - controls the impact of document length on relevance scoring
+# b = 0 -> no effect
+# b = 1 -> full length normalization
+BM25_B = 0.75
+
+
 DEFAULT_SEARCH_LIMIT = 5
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
