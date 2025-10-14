@@ -8,6 +8,7 @@ from typing import Counter, Optional
 from nltk.stem import PorterStemmer
 
 from .search_utils import (
+    BM25_K1,
     CACHE_DIR,
     DEFAULT_SEARCH_LIMIT,
     load_movies,
@@ -42,6 +43,28 @@ class InvertedIndex:
         # Count term frequencies for this document
         self._term_frequencies[doc_id] = Counter(tokens)
 
+    def get_bm25_idf(self, term: str) -> float:
+        tokens = tokenize_text(term)
+        if len(tokens) != 1:
+            raise ValueError("Term must be a single token.")
+        
+        token = tokens[0]
+        N = len(self._docmap) # Total number of documents
+        df = len(self.get_documents(token)) # Number of documents containing the given term (Document frequency)
+
+        # BM25
+        # N - df: Number of documents not containing the given term
+        # +0.5: Laplace smoothing
+        # +1: Ensures the result is always positive
+        return math.log((N - df + 0.5) / (df + 0.5) + 1)
+
+    def get_bm25_tf(self, doc_id: int, term: str, k1: float = BM25_K1) -> float:
+        tf = self.get_tf(doc_id, term)
+
+        # BM25 saturation formula
+        # Uses diminishing returns. After a certain point the number of term occurrences matters less.
+        return (tf * (k1 + 1)) / (tf + k1)
+
     def calculate_idf(self, term: str) -> float:
         tokens = tokenize_text(term)
         if len(tokens) != 1:
@@ -52,7 +75,7 @@ class InvertedIndex:
         # Measures how many documents in the dataset contain a term
         term_doc_count = len(self.get_documents(token))
 
-        return round(math.log((doc_count + 1) / (term_doc_count + 1)), 2)
+        return math.log((doc_count + 1) / (term_doc_count + 1))
 
     def get_documents(self, term: str) -> list[int]:
         doc_ids = self._index.get(term, set())
@@ -120,6 +143,20 @@ class InvertedIndex:
             raise FileNotFoundError("Index files doesn't exist. Please run the build command.")
 
 
+def bm25idf_command(term: str) -> float:
+    index = InvertedIndex()
+    index.load()
+
+    return index.get_bm25_idf(term)
+
+
+def bm25_tf_command(doc_id: int, term: str, k1: float) -> float:
+    index = InvertedIndex()
+    index.load()
+
+    return index.get_bm25_tf(doc_id, term, k1)
+
+
 def build_command() -> None:
     index = InvertedIndex()
     index.build()
@@ -165,6 +202,16 @@ def tf_command(doc_id: int, term: str):
     index = InvertedIndex()
     index.load()
     return index.get_tf(doc_id, term)
+
+
+def tfidf_command(doc_id: int, term: str):
+    index = InvertedIndex()
+    index.load()
+
+    tf = index.get_tf(doc_id, term)
+    idf = index.calculate_idf(term)
+
+    return float(tf) * idf
 
 
 def preprocess_text(text: str) -> list[str]:
