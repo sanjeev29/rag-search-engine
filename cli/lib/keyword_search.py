@@ -3,7 +3,7 @@ import os
 import pickle
 import string
 from collections import defaultdict
-from typing import Counter, Optional
+from typing import Any, Counter, Optional
 
 from nltk.stem import PorterStemmer
 
@@ -58,6 +58,29 @@ class InvertedIndex:
 
         return sum(self._docs_length.values()) / total_docs
 
+    def bm25(self, doc_id: int, term: str) -> float:
+        tf = self.get_bm25_tf(doc_id, term)
+        idf = self.get_bm25_idf(term)
+
+        return tf * idf
+
+    def bm25_search(self, query, limit) -> dict[int, dict[str, Any]]:
+        tokens = tokenize_text(query)
+        # Maps document IDs -> BM25 score
+        scores = defaultdict(float)
+
+        for token in tokens:
+            for doc_id in self._index.get(token, ""):
+                scores[doc_id] += self.bm25(doc_id, token)
+
+        sorted_keys = sorted(scores, key=scores.get, reverse=True)[:limit]
+
+        results = {}
+        for doc_id in sorted_keys:
+            doc = self.get_document_by_id(doc_id)
+            results[doc_id] = {"title": doc['title'], "score": scores[doc_id]}
+        return results
+
     def get_bm25_idf(self, term: str) -> float:
         tokens = tokenize_text(term)
         if len(tokens) != 1:
@@ -79,7 +102,6 @@ class InvertedIndex:
         # Consider doc length normalization
         doc_length = self._docs_length[doc_id]
         avg_doc_length = self.__get_avg_doc_length()
-        print(doc_length)
         len_normalization = 1 - b + b * (doc_length / avg_doc_length)
 
         # BM25 saturation formula
@@ -185,6 +207,13 @@ def bm25_tf_command(doc_id: int, term: str, k1: float, b: float) -> float:
     index.load()
 
     return index.get_bm25_tf(doc_id, term, k1, b)
+
+
+def bm25search_command(query: str, limit: int) -> dict[int, dict[str, Any]]:
+    index = InvertedIndex()
+    index.load()
+
+    return index.bm25_search(query, limit)
 
 
 def build_command() -> None:
