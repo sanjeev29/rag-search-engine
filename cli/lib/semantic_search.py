@@ -1,4 +1,5 @@
 import os
+from unittest import result
 import numpy as np
 
 from typing import Any
@@ -55,7 +56,48 @@ class SemanticSearch:
 
         # Build embeddings for the given documents and cache them
         return self.build_embeddings(documents)
-        
+
+    def search(self, query: str, limit: int) -> list[dict]:
+        # Check if embeddings are loaded
+        if self.embeddings is None:
+            raise ValueError("No embeddings loaded. Call `load_or_create_embeddings` first.")
+
+        # Generate embedding for given query
+        query_embedding = self.generate_embedding(text=query)
+
+        # Calculate cosine similarity between query embedding and each document embedding
+        scores = []
+        for i, embedding in enumerate(self.embeddings):
+            similarity_score = cosine_similarity(query_embedding, embedding)
+            scores.append((similarity_score, self.documents[i]))
+
+        # Sort by similarity score
+        scores.sort(key=lambda x:x[0], reverse=True)
+
+        return [
+            {"title": doc['title'], "description": doc['description'], "score": score} 
+            for score, doc in scores[:limit]
+        ]
+
+
+def cosine_similarity(vec1, vec2):
+    dot_product = np.dot(vec1, vec2)
+    norm1 = np.linalg.norm(vec1)
+    norm2 = np.linalg.norm(vec2)
+
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+
+    return dot_product / (norm1 * norm2)
+
+
+def embed_query_text_command(query: str):
+    search = SemanticSearch()
+    embedding = search.generate_embedding(query)
+    print(f"Query: {query}")
+    print(f"First 5 dimensions: {embedding[:5]}")
+    print(f"Shape: {embedding.shape}")
+
 
 def embed_text_command(text: str):
     search = SemanticSearch()
@@ -64,6 +106,14 @@ def embed_text_command(text: str):
     print(f"Text: {text}")
     print(f"First 3 dimensions: {embedding[:3]}")
     print(f"Dimensions: {embedding.shape[0]}")
+
+
+def search_command(query: str, limit: int) -> list[dict]:
+    search = SemanticSearch()
+    docs = load_movies()
+    search.load_or_create_embeddings(docs)
+
+    return search.search(query, limit)
 
 
 def verify_embeddings_command():
