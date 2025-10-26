@@ -80,6 +80,18 @@ class SemanticSearch:
         ]
 
 
+def chunk_text_command(text: str, chunk_size: int) -> list[str]:
+    words = text.split()
+    chunks = []
+    
+    # Create chunks of given size
+    for i in range(0, len(words), chunk_size):
+        chunk = " ".join(words[i:i + chunk_size])
+        chunks.append(chunk)
+    
+    return chunks
+
+
 def cosine_similarity(vec1, vec2):
     dot_product = np.dot(vec1, vec2)
     norm1 = np.linalg.norm(vec1)

@@ -2,8 +2,12 @@
 
 import argparse
 
-from lib.search_utils import DEFAULT_SEARCH_LIMIT
+from lib.search_utils import (
+    DEFAULT_SEARCH_LIMIT,
+    DEFAULT_CHUNK_SIZE
+)
 from lib.semantic_search import (
+    chunk_text_command,
     embed_query_text_command,
     embed_text_command,
     search_command,
@@ -34,9 +38,19 @@ def main():
     search_parser.add_argument("query", type=str, help="Search query")
     search_parser.add_argument("--limit", type=int, default=DEFAULT_SEARCH_LIMIT, help="Search results limit (Optional)")
 
+    # Text chunk
+    chunk_parser = subparsers.add_parser("chunk", help="Chunk long text into smaller text of given chunk size")
+    chunk_parser.add_argument("text", type=str, help="Text to chunk")
+    chunk_parser.add_argument("--chunk-size", type=int, default=DEFAULT_CHUNK_SIZE, help="Fixed chunk size (Optional)")
+
     args = parser.parse_args()
 
     match args.command:
+        case "chunk":
+            chunks = chunk_text_command(args.text, args.chunk_size)
+            print(f"Chunking {len(args.text)} characters")
+            for i, chunk in enumerate(chunks):
+                print(f"{i}. {chunk}")
         case "embedquery":
             embed_query_text_command(args.query)
         case "embed_text":
@@ -46,7 +60,7 @@ def main():
 
             for i, result in enumerate(results, start=1):
                 print(f"{i}.\t{result['title']} (score: {result['score']:.2f})")
-                print(f"\t{result['description'][:50]}...")
+                print(f"\t{result['description'][:200]}...")
 
         case "verify":
             verify_model_command()
