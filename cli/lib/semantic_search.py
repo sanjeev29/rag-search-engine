@@ -80,14 +80,28 @@ class SemanticSearch:
         ]
 
 
-def chunk_text_command(text: str, chunk_size: int) -> list[str]:
+def chunk_text_command(text: str, chunk_size: int, overlap: int) -> list[str]:
+    # Validate inputs
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than 0")
+    
+    if overlap < 0:
+        raise ValueError("overlap cannot be negative")
+    
+    if overlap >= chunk_size:
+        raise ValueError(f"overlap ({overlap}) must be less than chunk_size ({chunk_size})")
+    
     words = text.split()
     chunks = []
     
-    # Create chunks of given size
-    for i in range(0, len(words), chunk_size):
+    # Calculate step size: when overlap > 0, each chunk should overlap by 'overlap' words
+    step_size = chunk_size - overlap if overlap > 0 else chunk_size
+    
+    # Create chunks with proper overlap
+    for i in range(0, len(words), step_size):
         chunk = " ".join(words[i:i + chunk_size])
-        chunks.append(chunk)
+        if chunk:
+            chunks.append(chunk)
     
     return chunks
 

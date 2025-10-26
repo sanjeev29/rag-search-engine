@@ -42,14 +42,15 @@ def main():
     chunk_parser = subparsers.add_parser("chunk", help="Chunk long text into smaller text of given chunk size")
     chunk_parser.add_argument("text", type=str, help="Text to chunk")
     chunk_parser.add_argument("--chunk-size", type=int, default=DEFAULT_CHUNK_SIZE, help="Fixed chunk size (Optional)")
+    chunk_parser.add_argument("--overlap", type=int, default=0, help="Chunk overlap size (Optional)")
 
     args = parser.parse_args()
 
     match args.command:
         case "chunk":
-            chunks = chunk_text_command(args.text, args.chunk_size)
+            chunks = chunk_text_command(args.text, args.chunk_size, args.overlap)
             print(f"Chunking {len(args.text)} characters")
-            for i, chunk in enumerate(chunks):
+            for i, chunk in enumerate(chunks, start=1):
                 print(f"{i}. {chunk}")
         case "embedquery":
             embed_query_text_command(args.query)
