@@ -3,6 +3,7 @@
 import argparse
 
 from lib.search_utils import (
+    DEFAULT_MAX_CHUNK_SIZE,
     DEFAULT_SEARCH_LIMIT,
     DEFAULT_CHUNK_SIZE
 )
@@ -11,6 +12,7 @@ from lib.semantic_search import (
     embed_query_text_command,
     embed_text_command,
     search_command,
+    semantic_chunk_command,
     verify_embeddings_command,
     verify_model_command
 )
@@ -39,9 +41,15 @@ def main():
     search_parser.add_argument("--limit", type=int, default=DEFAULT_SEARCH_LIMIT, help="Search results limit (Optional)")
 
     # Text chunk
-    chunk_parser = subparsers.add_parser("chunk", help="Chunk long text into smaller text of given chunk size")
+    chunk_parser = subparsers.add_parser("chunk", help="Splits long text into smaller text of given chunk size")
     chunk_parser.add_argument("text", type=str, help="Text to chunk")
     chunk_parser.add_argument("--chunk-size", type=int, default=DEFAULT_CHUNK_SIZE, help="Fixed chunk size (Optional)")
+    chunk_parser.add_argument("--overlap", type=int, default=0, help="Chunk overlap size (Optional)")
+
+    # Semantic Text chunk
+    chunk_parser = subparsers.add_parser("semantic_chunk", help="Splits text on sentence boundaries to preserve meaning")
+    chunk_parser.add_argument("text", type=str, help="Text to chunk")
+    chunk_parser.add_argument("--max-chunk-size", type=int, default=DEFAULT_MAX_CHUNK_SIZE, help="Fixed chunk size (Optional)")
     chunk_parser.add_argument("--overlap", type=int, default=0, help="Chunk overlap size (Optional)")
 
     args = parser.parse_args()
@@ -50,6 +58,7 @@ def main():
         case "chunk":
             chunks = chunk_text_command(args.text, args.chunk_size, args.overlap)
             print(f"Chunking {len(args.text)} characters")
+
             for i, chunk in enumerate(chunks, start=1):
                 print(f"{i}. {chunk}")
         case "embedquery":
@@ -62,7 +71,12 @@ def main():
             for i, result in enumerate(results, start=1):
                 print(f"{i}.\t{result['title']} (score: {result['score']:.2f})")
                 print(f"\t{result['description'][:200]}...")
-
+        case "semantic_chunk":
+            chunks = semantic_chunk_command(args.text, args.max_chunk_size, args.overlap)
+            print(f"Semantically chunking {len(args.text)} characters")
+            
+            for i, chunk in enumerate(chunks, start=1):
+                print(f"{i}. {chunk}")
         case "verify":
             verify_model_command()
         case "verify_embeddings":

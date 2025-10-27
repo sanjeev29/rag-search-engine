@@ -1,4 +1,5 @@
 import os
+import re
 from unittest import result
 import numpy as np
 
@@ -80,7 +81,7 @@ class SemanticSearch:
         ]
 
 
-def chunk_text_command(text: str, chunk_size: int, overlap: int) -> list[str]:
+def validate_search_inputs(chunk_size: int, overlap: int) -> None:
     # Validate inputs
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than 0")
@@ -90,6 +91,10 @@ def chunk_text_command(text: str, chunk_size: int, overlap: int) -> list[str]:
     
     if overlap >= chunk_size:
         raise ValueError(f"overlap ({overlap}) must be less than chunk_size ({chunk_size})")
+
+
+def chunk_text_command(text: str, chunk_size: int, overlap: int) -> list[str]:
+    validate_search_inputs(chunk_size, overlap)
     
     words = text.split()
     chunks = []
@@ -140,6 +145,28 @@ def search_command(query: str, limit: int) -> list[dict]:
     search.load_or_create_embeddings(docs)
 
     return search.search(query, limit)
+
+
+def semantic_chunk_command(text: str, max_chunk_size: int, overlap: int) -> list[str]:
+    validate_search_inputs(max_chunk_size, overlap)
+
+    # Split text into individual sentences
+    sentences = re.split(
+        pattern=r"(?<=[.!?])\s+",
+        string=text
+    )
+
+    # Calculate step size: when overlap > 0, each chunk should overlap by 'overlap' sentences
+    step_size = max_chunk_size - overlap if overlap > 0 else max_chunk_size
+    chunks = []
+    
+    # Create chunks with proper overlap
+    for i in range(0, len(sentences), step_size):
+        chunk = " ".join(sentences[i:i + max_chunk_size])
+        if chunk:
+            chunks.append(chunk)
+    
+    return chunks
 
 
 def verify_embeddings_command():
