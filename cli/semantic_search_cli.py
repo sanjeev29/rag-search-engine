@@ -16,7 +16,10 @@ from lib.semantic_search import (
     verify_embeddings_command,
     verify_model_command
 )
-from lib.chunked_semantic_search import embed_chunks_command
+from lib.chunked_semantic_search import (
+    embed_chunks_command,
+    search_chunked_command
+)
 
 def main():
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
@@ -56,6 +59,11 @@ def main():
     # Embed chunks
     embed_chunk = subparsers.add_parser("embed_chunks", help="Build chunk embeddings for the movies dataset")
 
+    # Chunked Semantic Search
+    search_chunked = subparsers.add_parser("search_chunked", help="")
+    search_chunked.add_argument("query", type=str, help="Search query")
+    search_chunked.add_argument("--limit", type=int, default=DEFAULT_SEARCH_LIMIT, help="Search results limit (Optional)")
+
     args = parser.parse_args()
 
     match args.command:
@@ -77,6 +85,12 @@ def main():
             for i, result in enumerate(results, start=1):
                 print(f"{i}.\t{result['title']} (score: {result['score']:.2f})")
                 print(f"\t{result['description'][:200]}...")
+        case "search_chunked":
+            results = search_chunked_command(args.query, args.limit)
+
+            for i, result in enumerate(results, start=1):
+                print(f"\n{i}. {result['title']} (score: {result['score']:.4f})")
+                print(f"   {result['description']}...")
         case "semantic_chunk":
             chunks = semantic_chunk_command(args.text, args.max_chunk_size, args.overlap)
             print(f"Semantically chunking {len(args.text)} characters")
