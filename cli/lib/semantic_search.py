@@ -149,12 +149,27 @@ def search_command(query: str, limit: int) -> list[dict]:
 
 def semantic_chunk_command(text: str, max_chunk_size: int, overlap: int) -> list[str]:
     validate_search_inputs(max_chunk_size, overlap)
+    
+    text = text.strip()
+    if not text:
+        return []
 
     # Split text into individual sentences
     sentences = re.split(
         pattern=r"(?<=[.!?])\s+",
         string=text
     )
+    
+    # Strip whitespace from each sentence
+    sentences = [sentence for sentence in sentences if sentence.strip()]
+    
+    # Filter out empty sentences
+    sentences = [sentence for sentence in sentences if sentence]
+    
+    # After splitting sentences, if there's only one sentence and it doesn't end with 
+    # punctuation mark like ., !, or ?, treat the whole text as one sentence
+    if len(sentences) == 1 and not sentences[0].endswith(('.', '!', '?')):
+        sentences = [text.strip()]
 
     # Calculate step size: when overlap > 0, each chunk should overlap by 'overlap' sentences
     step_size = max_chunk_size - overlap if overlap > 0 else max_chunk_size
@@ -162,7 +177,7 @@ def semantic_chunk_command(text: str, max_chunk_size: int, overlap: int) -> list
     
     # Create chunks with proper overlap
     for i in range(0, len(sentences), step_size):
-        chunk = " ".join(sentences[i:i + max_chunk_size])
+        chunk = " ".join(sentences[i:i + max_chunk_size]).strip()
         if chunk:
             chunks.append(chunk)
     
