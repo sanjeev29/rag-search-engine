@@ -16,6 +16,7 @@ from lib.semantic_search import (
     verify_embeddings_command,
     verify_model_command
 )
+from lib.chunked_semantic_search import embed_chunks_command
 
 def main():
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
@@ -32,7 +33,7 @@ def main():
     subparsers.add_parser("verify_embeddings", help="Verify movie dataset embeddings")
 
     # Generate query embedding
-    embed_query_parser = subparsers.add_parser("embedquery", help="Generate query embedding")
+    embed_query_parser = subparsers.add_parser("embed_query", help="Generate query embedding")
     embed_query_parser.add_argument("query", type=str, help="Query text")
 
     # Semantic Search
@@ -52,6 +53,9 @@ def main():
     chunk_parser.add_argument("--max-chunk-size", type=int, default=DEFAULT_MAX_CHUNK_SIZE, help="Fixed chunk size (Optional)")
     chunk_parser.add_argument("--overlap", type=int, default=0, help="Chunk overlap size (Optional)")
 
+    # Embed chunks
+    embed_chunk = subparsers.add_parser("embed_chunks", help="Build chunk embeddings for the movies dataset")
+
     args = parser.parse_args()
 
     match args.command:
@@ -61,7 +65,9 @@ def main():
 
             for i, chunk in enumerate(chunks, start=1):
                 print(f"{i}. {chunk}")
-        case "embedquery":
+        case "embed_chunks":
+            embed_chunks_command()
+        case "embed_query":
             embed_query_text_command(args.query)
         case "embed_text":
             embed_text_command(args.text)
