@@ -46,7 +46,7 @@ uv run cli/semantic_search_cli.py verify_embeddings
 uv run cli/semantic_search_cli.py embed_chunks
 ```
 
-## 🔍 Usage Examples
+## Usage Examples
 
 ### Keyword Search (BM25)
 
