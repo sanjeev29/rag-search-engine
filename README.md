@@ -83,8 +83,9 @@ uv run cli/semantic_search_cli.py chunk "Your long text here..." --chunk-size 20
 
 # Semantic boundary-aware chunking
 uv run cli/semantic_search_cli.py semantic_chunk "Your text..." --max-chunk-size 4 --overlap 1
+```
 
-## 🔧 Configuration
+## Configuration
 
 Key parameters can be adjusted in `cli/lib/search_utils.py`:
 
@@ -95,8 +96,6 @@ Key parameters can be adjusted in `cli/lib/search_utils.py`:
 
 ## Future Search Enhancements:
 
-[ ] **Hybrid Search**: Combines BM25 keyword scoring with semantic similarity for optimal relevance ranking
-[ ] **LLM-Powered Query Rewriting and Expansion**: Uses large language models to expand and refine user queries 
-      before search execution
-[ ] **Two-Stage Reranking**: Initial broad retrieval followed by precise reranking using advanced scoring 
-      algorithms
+- [ ] **Hybrid Search**: Combines BM25 keyword scoring with semantic similarity for optimal relevance ranking
+- [ ] **LLM-Powered Query Rewriting and Expansion**: Uses large language models to expand and refine user queries before search execution
+- [ ] **Two-Stage Reranking**: Initial broad retrieval followed by precise reranking using advanced scoring algorithms
