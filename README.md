@@ -14,7 +14,7 @@ A Retrieval-Augmented Generation (RAG) search engine implementing multiple searc
 
 ### Installation
 
-```bash
+```
 # Clone the repository
 git clone <your-repo-url>
 cd rag-search-engine
@@ -28,14 +28,14 @@ pip install -e .
 
 ### Download Sample Data
 
-```bash
+```
 # Download the movie dataset
 wget https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/course-rag-movies.json -O data/movies.json
 ```
 
 ### Build Search Indices
 
-```bash
+```
 # Build keyword search index
 uv run cli/keyword_search_cli.py build
 
@@ -50,7 +50,7 @@ uv run cli/semantic_search_cli.py embed_chunks
 
 ### Keyword Search (BM25)
 
-```bash
+```
 # Basic keyword search
 uv run cli/keyword_search_cli.py search "action thriller"
 
@@ -64,7 +64,7 @@ uv run cli/keyword_search_cli.py idf "thriller"
 
 ### Semantic Search
 
-```bash
+```
 # Semantic similarity search
 uv run cli/semantic_search_cli.py search "movies about artificial intelligence"
 
@@ -77,7 +77,7 @@ uv run cli/semantic_search_cli.py search_chunked "psychological thriller with pl
 
 ### Text Processing
 
-```bash
+```
 # Fixed-size text chunking
 uv run cli/semantic_search_cli.py chunk "Your long text here..." --chunk-size 200 --overlap 50
 
@@ -96,5 +96,7 @@ Key parameters can be adjusted in `cli/lib/search_utils.py`:
 ## Future Search Enhancements:
 
 [ ] **Hybrid Search**: Combines BM25 keyword scoring with semantic similarity for optimal relevance ranking
-[ ] **LLM-Powered Query Rewriting and Expansion**: Uses large language models to expand and refine user queries before search execution
-[ ] **Two-Stage Reranking**: Initial broad retrieval followed by precise reranking using advanced scoring algorithms
+[ ] **LLM-Powered Query Rewriting and Expansion**: Uses large language models to expand and refine user queries 
+      before search execution
+[ ] **Two-Stage Reranking**: Initial broad retrieval followed by precise reranking using advanced scoring 
+      algorithms
